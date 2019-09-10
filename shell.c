@@ -1,5 +1,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,14 +29,19 @@ void liberaGeral(char* path) {
 }
 
 void rodeVeja(char* path) {
-        pid_t pid = fork();
-        char *argv[] = {NULL, NULL};
-        argv[0] = path;
-        if (pid == 0) {
-            int e = 0;
-            e = execve(argv[0], argv, NULL);
-            printf("programa '%s' retornou com código %d.", argv[0], e);
-        }
+    pid_t pid = fork();
+    int status;
+    wait(&status);
+    char *argv[] = {NULL, NULL};
+    char *envp[] = {"HOME=/", "PATH=/bin:/usr/bin", NULL};
+    argv[0] = path;
+    int e = 0;
+    if (pid == 0) {
+        e = execve(argv[0], argv, envp);
+        printf("programa '%s' retornou com código %d.\n", argv[0], e);
+    } else {
+        printf("programa '%s' retornou com código %d.\n", argv[0], e);
+    }
 }
 
 void readCommand(void) {
