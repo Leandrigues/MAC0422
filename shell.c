@@ -1,8 +1,10 @@
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -26,7 +28,14 @@ void liberaGeral(char* path) {
 }
 
 void rodeVeja(char* path) {
-    
+        pid_t pid = fork();
+        char *argv[] = {NULL, NULL};
+        argv[0] = path;
+        if (pid == 0) {
+            int e = 0;
+            e = execve(argv[0], argv, NULL);
+            printf("programa '%s' retornou com código %d.", argv[0], e);
+        }
 }
 
 void readCommand(void) {
