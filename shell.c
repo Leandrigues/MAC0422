@@ -31,20 +31,22 @@ void liberaGeral(char* path) {
 void rodeVeja(char* path) {
     pid_t pid = fork();
     int status;
-    char *argv[] = {NULL, NULL};
+    char *argv[] = {"/bin/ls", NULL};
     char *envp[] = {"HOME=/", "PATH=/bin:/usr/bin", NULL};
     char bin[] = "/bin/";
     char *program = malloc(strlen(bin) + strlen(path) + 2);
     int e = 0;
+
     sprintf(program, "%s%s", bin, path);
     argv[0] = program;
+
     if (pid == 0) {
         e = execve(argv[0], argv, envp);
-        printf("programa '%s' retornou com código %d.\n",path, e);
     } else {
-        wait(&status);
-	printf("programa '%s' retornou com codigo %d.\n", path, e);
+        waitpid(pid, NULL, 0);
+        printf("=> programa '%s' retornou com código %d\n", program, e);
     }
+
     free(program);
 }
 
