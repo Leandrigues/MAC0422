@@ -9,6 +9,7 @@
 
 #define TRUE 1
 #define FALSE 0
+#define MAXTAM 100
 
 void protegePraCaramba(char* path) {
     pid_t pid = fork();
@@ -28,16 +29,16 @@ void liberaGeral(char* path) {
     }
 }
 
-void rodeVeja(char* path) {
+void rodeVeja(char** path) {
     pid_t pid = fork();
     int status;
-    char *argv[] = {"/bin/ls", NULL};
+    char** argv = path;
     char *envp[] = {"HOME=/", "PATH=/bin:/usr/bin", NULL};
     char bin[] = "/bin/";
-    char *program = malloc(strlen(bin) + strlen(path) + 2);
+    char *program = malloc(strlen(bin) + strlen(path[0]) + 2);
     int e = 0;
 
-    sprintf(program, "%s%s", bin, path);
+    sprintf(program, "%s%s", bin, path[0]);
     argv[0] = program;
 
     if (pid == 0) {
@@ -54,38 +55,38 @@ void readCommand(void) {
     char *prog;
     char *param;
     char c;
-    int size = 10;
     int i = 0;
 
-    prog = malloc(size);
+    prog = malloc(MAXTAM);
     c = fgetc(stdin);
 
     while(c != ' ') {
         prog[i++] = c;
-
-        if(i == size) {
-            size = size*2;
-            prog = realloc(prog, size);
-        }
-
         c = fgetc(stdin);
     }
+    prog[i] = '\0';
 
     c = fgetc(stdin);
     i = 0;
-    size = 10;
-    param = malloc(size);
+    param = malloc(MAXTAM);
 
     while(c != '\n') {
         param[i++] = c;
 
-        if(i == size) {
-            size = size*2;
-            param = realloc(param, size);
-        }
-
         c = fgetc(stdin);
     }
+    param[i] = '\0';
+
+    char **command = malloc(sizeof(char *) * 10);
+    char *parsed;
+    int index = 0;
+
+    parsed = strtok(param, " ");
+    while(parsed != NULL) {
+        command[index++] = parsed;
+        parsed = strtok(NULL, " ");
+    }
+    command[index] = NULL; 
 
     /* protegepracaramba */
     if (!strcmp(prog, "protegepracaramba")) {
@@ -97,11 +98,14 @@ void readCommand(void) {
         liberaGeral(param);
     }
 
+    /* rodeveja */
     if (!strcmp(prog, "rodeveja")) {
-        rodeVeja(param);
+        rodeVeja(command);
     }
+
     free(prog);
     free(param);
+    free(command);
 }
 
 int main(int argc, char **argv  ) {
