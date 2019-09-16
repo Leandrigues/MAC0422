@@ -13,6 +13,7 @@
 
 void protegePraCaramba(char* path) {
     pid_t pid = fork();
+
     if(pid == 0) {
         printf("Liberando\n");
         chmod(path, 00000);
@@ -22,6 +23,7 @@ void protegePraCaramba(char* path) {
 
 void liberaGeral(char* path) {
     pid_t pid = fork();
+
     if(pid == 0) {
         printf("Liberando\n");
         chmod(path, 00777);
@@ -39,6 +41,7 @@ void rodeVeja(char** path) {
 
     sprintf(program, "%s%s", bin, path[0]);
     argv[0] = program;
+
     if (pid == 0) {
         e = execve(argv[0], argv, envp);
     } else {
@@ -53,17 +56,10 @@ void rode(char** path) {
     pid_t pid = fork();
     char** argv = path;
     char *envp[] = {"HOME=/", "PATH=/bin:/usr/bin", NULL};
-    char bin[] = "/bin/";
-    char *program = malloc(strlen(bin) + strlen(path[0]) + 2);
-    
-    sprintf(program, "%s%s", bin, path[0]);
-    argv[0] = program;
+
     if (pid == 0) {
-        setpgid(pid, 0);
         execve(argv[0], argv, envp);
     }
-
-    free(program);
 }
 
 int readCommand(void) {
@@ -75,19 +71,28 @@ int readCommand(void) {
     prog = malloc(MAXTAM);
     c = fgetc(stdin);
 
-    while(c != ' ') {
+    // 
+    while(c != ' ' && c != '\n') {
         prog[i++] = c;
         c = fgetc(stdin);
     }
+
     prog[i] = '\0';
+
+    /* exit shell */
+    if (!strcmp(prog, "exit")) {
+        free(prog); 
+        return TRUE;
+    }
 
     c = fgetc(stdin);
     i = 0;
     param = malloc(MAXTAM);
 
+
+    /* lê os parâmetros em forma de string */
     while(c != '\n') {
         param[i++] = c;
-
         c = fgetc(stdin);
     }
     param[i] = '\0';
@@ -95,8 +100,9 @@ int readCommand(void) {
     char **command = malloc(sizeof(char *) * 10);
     char *parsed;
     int index = 0;
-
     parsed = strtok(param, " ");
+
+    /* transforma os parâmetros numa lista */
     while(parsed != NULL) {
         command[index++] = parsed;
         parsed = strtok(NULL, " ");
@@ -104,33 +110,24 @@ int readCommand(void) {
     command[index] = NULL; 
 
     /* protegepracaramba */
-    if (!strcmp(prog, "protegepracaramba")) {
+    if (!strcmp(prog, "protegepracaramba"))
         protegePraCaramba(param);
-    }
 
     /* liberageral */
-    if (!strcmp(prog, "liberageral")) {
+    if (!strcmp(prog, "liberageral"))
         liberaGeral(param);
-    }
 
     /* rodeveja */
-    if (!strcmp(prog, "rodeveja")) {
+    if (!strcmp(prog, "rodeveja"))
         rodeVeja(command);
-    }
 
     /* rode */
-    if (!strcmp(prog, "rode")) {
+    if (!strcmp(prog, "rode"))
         rode(command);
-    }
 
-    /* sair do terminal */
-    if (!strcmp(prog, "exit")) {
-        return TRUE;
-    }
-
-    free(prog);
-    free(param);
     free(command);
+    free(param);
+    free(prog);
 
     return FALSE;
 }
