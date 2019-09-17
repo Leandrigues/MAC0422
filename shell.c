@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <fcntl.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -14,31 +15,38 @@
 
 void protegePraCaramba(char *path) {
     pid_t pid = fork();
+    int status = 0;
+    int e = 0;
 
     if(pid == 0) {
         chmod(path, 00000);
-        exit(0);
+        exit(e);
+    } else {
+        waitpid(pid, &status, 0);
     }
 }
 
 void liberaGeral(char *path) {
     pid_t pid = fork();
+    int status = 0;
+    int e = 0;
 
     if(pid == 0) {
-        chmod(path, 00777);
-        exit(0);
+        e = chmod(path, 00777);
+        exit(e);
+    } else {
+        waitpid(pid, &status, 0);
     }
 }
 
 void rodeVeja(char **path) {
     pid_t pid = fork();
     char **argv = path;
-    char *envp[] = {"HOME=/", "PATH=/bin:/usr/bin", NULL};
     int e = 0;
     int status = 0;
 
     if (pid == 0) {
-        e = execve(argv[0], argv, envp);
+        e = execve(argv[0], argv, 0);
         printf("shell: command not found: %s\n", path[0]);
     } else {
         /* aguarda finalização do processo filho */ 
@@ -50,15 +58,14 @@ void rodeVeja(char **path) {
 void rode(char **path) {
     pid_t pid = fork();
     char **argv = path;
-    char *envp[] = {"HOME=/", "PATH=/bin:/usr/bin", NULL};
     int e;
     
     if (pid == 0) {
         /* evita que CTRL+C interrompa o processo filho (o shell monopoliza o teclado) */
-        signal(SIGINT, SIG_IGN);
-        e = execve(argv[0], argv, envp);
-        free(argv);
+        close(STDIN_FILENO);
+        e = execve(argv[0], argv, 0);
         printf("shell: command not found: %s\n", path[0]);
+        exit(e);
     } else {
         /* evita que o processo filho se torne um zombie */
         signal(SIGCHLD, SIG_IGN);
@@ -76,6 +83,7 @@ int readCommand(void) {
     
     prog = malloc(MAXTAM);
     printf("$ ");
+
     c = fgetc(stdin);
     while(c != ' ' && c != '\n') {
         prog[i++] = c;
@@ -92,7 +100,7 @@ int readCommand(void) {
 
     c = fgetc(stdin);
     i = 0;
-    param = malloc(MAXTAM);
+    param = malloc(2*MAXTAM);
 
 
     /* lê os parâmetros em forma de string */
@@ -118,15 +126,15 @@ int readCommand(void) {
         protegePraCaramba(param);
 
     /* liberageral */
-    if (!strcmp(prog, "liberageral"))
+    else if (!strcmp(prog, "liberageral"))
         liberaGeral(param);
 
     /* rodeveja */
-    if (!strcmp(prog, "rodeveja"))
+    else if (!strcmp(prog, "rodeveja"))
         rodeVeja(command);
 
     /* rode */
-    if (!strcmp(prog, "rode"))
+    else if (!strcmp(prog, "rode"))
         rode(command);
 
     free(command);
