@@ -47,7 +47,7 @@ void rodeVeja(char **path) {
 
     if (pid == 0) {
         e = execve(argv[0], argv, 0);
-        printf("shell: command not found: %s\n", path[0]);
+        exit(e);
     } else {
         /* aguarda finalização do processo filho */ 
         waitpid(pid, &status, 0);
@@ -61,10 +61,8 @@ void rode(char **path) {
     int e;
     
     if (pid == 0) {
-        /* evita que CTRL+C interrompa o processo filho (o shell monopoliza o teclado) */
         close(STDIN_FILENO);
         e = execve(argv[0], argv, 0);
-        printf("shell: command not found: %s\n", path[0]);
         exit(e);
     } else {
         /* evita que o processo filho se torne um zombie */
