@@ -30,20 +30,29 @@ TAP_DEV=minixtap0
 VERBOSE_MODE=0
 
 ok () {
-	echo -e "${GREEN}OK: $1${NC}\n"
+    if [ -z "$BASH" ]; then
+        echo "${GREEN}OK: $1${NC}\n"
+    else
+        echo -e "${GREEN}OK: $1${NC}\n"
+    fi
 }
 
 fail () {
-	echo -e "${RED}ERROR: $1${NC}\n"
+    if [ -z "$BASH" ]; then
+        echo "${RED}ERROR: $1${NC}\n"
+    else
+        echo -e "${RED}ERROR: $1${NC}\n"
+    fi
+
 	exit 1
 }
 
-configure () {
-    # Check if bash is bash
-    if [ "x$BASH" = "x" ]; then
-        fail "This script must be run by bash!"
-    fi
+# Check if bash is bash
+if [ -z "$BASH" ]; then
+    fail "This script must be run by bash!"
+fi
 
+configure () {
     if [ "$EUID" -ne 0 ]; then
         fail "This script must be run by root! Use sudo!"
     fi
@@ -61,11 +70,11 @@ configure () {
     if [ ! -f "$CDROM" ]; then
         fail "Could not find CDROM image $CDROM ."
     fi
+
+    if [ ! -f "$IMAGE" ]; then
+        fail "Could not find HDD image $IMAGE ."
+    fi
 }
-
-configure
-
-ME=$(basename $0)
 
 while getopts b:i:d:v option
 do
@@ -77,6 +86,10 @@ case "${option}" in
 	v) VERBOSE_MODE=1;;
 esac
 done
+
+configure
+
+ME=$(basename $0)
 
 # Log function for verbose mode
 log () {
@@ -139,7 +152,7 @@ set_bridge () {
 
 	while [ ! -d "/sys/class/net/$TAP_DEV" ]
 	do
-		log "sleep for $DELAY seconds to give qemu enough time to bring $TAP_DEV up" 
+		log "sleep for $DELAY seconds to give qemu enough time to bring $TAP_DEV up"
 		sleep 4
 	done
 
@@ -166,7 +179,7 @@ connect_to_vm () {
 }
 
 kill_qemu () {
-    local pid=$(pgrep -f $IMAGE)
+    local pid=$(pgrep -u root -f "qemu.*$IMAGE")
     echo "killing qemu in 5 seconds..."
     sleep 5
     kill $pid
